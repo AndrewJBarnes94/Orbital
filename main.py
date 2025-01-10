@@ -1,11 +1,14 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
+from ticket_manager import TicketManager
 
 class OrbitalApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Orbital - Ticket Management System")
+        self.ticket_manager = TicketManager()
         self.create_widgets()
+        self.load_tickets()
 
     def create_widgets(self):
         # Create main frame
@@ -37,12 +40,15 @@ class OrbitalApp:
         self.status = ttk.Combobox(main_frame, values=["Open", "In Progress", "Closed"])
         self.status.grid(row=4, column=1, sticky=(tk.W, tk.E))
 
-        # Buttons for creating and updating tickets
+        # Buttons for creating, updating, and refreshing tickets
         self.create_button = ttk.Button(main_frame, text="Create Ticket", command=self.create_ticket)
         self.create_button.grid(row=5, column=0, sticky=tk.W)
 
         self.update_button = ttk.Button(main_frame, text="Update Ticket", command=self.update_ticket)
         self.update_button.grid(row=5, column=1, sticky=tk.E)
+
+        self.refresh_button = ttk.Button(main_frame, text="Refresh Tickets", command=self.load_tickets)
+        self.refresh_button.grid(row=5, column=2, sticky=tk.E)
 
         # Ticket list
         self.ticket_list = ttk.Treeview(main_frame, columns=("Title", "Project Type", "Priority", "Status"), show="headings")
@@ -50,7 +56,7 @@ class OrbitalApp:
         self.ticket_list.heading("Project Type", text="Project Type")
         self.ticket_list.heading("Priority", text="Priority")
         self.ticket_list.heading("Status", text="Status")
-        self.ticket_list.grid(row=6, column=0, columnspan=2, sticky=(tk.W, tk.E))
+        self.ticket_list.grid(row=6, column=0, columnspan=3, sticky=(tk.W, tk.E))
 
         # Configure column weights
         self.root.columnconfigure(0, weight=1)
@@ -68,7 +74,7 @@ class OrbitalApp:
             messagebox.showerror("Error", "All fields must be filled out")
             return
 
-        self.ticket_list.insert("", "end", values=(title, project_type, priority, status))
+        self.ticket_manager.create_ticket(title, project_type, description, priority, status)
         self.clear_fields()
         messagebox.showinfo("Success", "Ticket created successfully")
 
@@ -88,9 +94,16 @@ class OrbitalApp:
             messagebox.showerror("Error", "All fields must be filled out")
             return
 
-        self.ticket_list.item(selected_item, values=(title, project_type, priority, status))
+        self.ticket_manager.update_ticket(selected_item, title, project_type, description, priority, status)
         self.clear_fields()
         messagebox.showinfo("Success", "Ticket updated successfully")
+
+    def load_tickets(self):
+        for item in self.ticket_list.get_children():
+            self.ticket_list.delete(item)
+        tickets = self.ticket_manager.fetch_tickets()
+        for ticket in tickets:
+            self.ticket_list.insert("", "end", values=(ticket[1], ticket[2], ticket[4], ticket[5]))
 
     def clear_fields(self):
         self.ticket_title.delete(0, tk.END)
